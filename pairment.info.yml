@@ -1,0 +1,6 @@
+name: Pairment
+description: Checks your content for accessibility with Pairment.
+package: Content
+
+type: module
+core: 8.x

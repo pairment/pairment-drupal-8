@@ -1,0 +1,7 @@
+pairment.settings:
+  path: 'admin/config/content/pairment'
+  defaults:
+    _form: '\Drupal\pairment\Form\pairmentSettingsForm'
+    _title: 'Pairment settings'
+  requirements:
+    _permission: 'administer site configuration'

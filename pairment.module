@@ -1,0 +1,20 @@
+<?php
+
+function pairment_form_field_config_edit_form_alter(&$form, $form_state) {
+  if($form['default_value']['widget'][0]['#type'] !== 'text_format') {
+    return;
+  }
+  $pairment_fields = \Drupal::config('pairment.settings')->get('fields');
+  $form['pairment'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Check the accessibility of this field using Pairment')
+  );
+
+  $form['actions']['submit']['#submit'][] = 'pairment_form_field_config_edit_form_alter_submit';
+}
+
+function pairment_form_field_config_edit_form_alter_submit($form, $form_state) {
+  $field = $form['default_value']['widget'][0];
+  dpm($form);
+  $form_state->getValue('pairment');
+}

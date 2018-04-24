@@ -1,0 +1,5 @@
+pairment.settings:
+  title: 'Pairment'
+  parent: system.admin_config_content
+  description: 'Configure Pairment accessibility checking service.'
+  route_name: pairment.settings
