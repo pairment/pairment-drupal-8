@@ -1,0 +1,3 @@
+view pairment feedback:
+  title: 'View Pairment feedback'
+  restrict access: TRUE

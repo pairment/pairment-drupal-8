@@ -1,20 +1,87 @@
 <?php
 
+/**
+ * Implements hook_page_attachments().
+ */
+function pairment_page_attachments(array &$attachments) {
+  if (!\Drupal::currentUser()->hasPermission('view pairment feedback')) {
+    return;
+  }
+  $public_id = \Drupal::config('pairment.settings')->get('public_id');
+  if(!$public_id) {
+    return;
+  }
+
+  $script = '(function(w,d,t,u,n,s,e){w["A11yObject"]=n;w[n]=w[n]||function(){
+    (w[n].q=w[n].q||[]).push(arguments);};s=d.createElement(t);
+    e=d.getElementsByTagName(t)[0];s.async=1;s.src=u;e.parentNode.insertBefore(s,e);
+  })(window,document,"script","//localhost:3000/install/v1/'. $public_id .'.js");';
+  $attachments['#attached']['html_head'][] = [
+    [
+      '#tag' => 'script',
+      '#value' => $script,
+    ],
+    'pairment_js',
+  ];
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
 function pairment_form_field_config_edit_form_alter(&$form, $form_state) {
   if($form['default_value']['widget'][0]['#type'] !== 'text_format') {
     return;
   }
+  $field = $form_state->getFormObject()->getEntity();
+
   $pairment_fields = \Drupal::config('pairment.settings')->get('fields');
+  $field_id = str_replace('.', '--', $field->get('id'));
+
   $form['pairment'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Check the accessibility of this field using Pairment')
+    '#title' => t('Check the accessibility of this field using Pairment'),
+    '#default_value' => $pairment_fields[$field_id]
   );
 
   $form['actions']['submit']['#submit'][] = 'pairment_form_field_config_edit_form_alter_submit';
 }
 
+/**
+ * Submit callback for field settings form.
+ */
 function pairment_form_field_config_edit_form_alter_submit($form, $form_state) {
-  $field = $form['default_value']['widget'][0];
-  dpm($form);
-  $form_state->getValue('pairment');
+  $field = $form_state->getFormObject()->getEntity();
+  $pairment_fields = \Drupal::config('pairment.settings')->get('fields');
+  if(!$pairment_fields) {
+    $pairment_fields = array();
+  }
+  $field_id = str_replace('.', '--', $field->get('id'));
+  $pairment_fields[$field_id] = $form_state->getValue('pairment');
+  $config_factory = \Drupal::service('config.factory')->getEditable('pairment.settings');
+  $config_factory->set('fields', $pairment_fields)->save();
 }
+
+
+/**
+ * Implements hook_preprocess_field()
+ * Changes the display of a field if it needs to be checked by pairment.
+ */
+function pairment_preprocess_field(&$variables, $hook) {
+  if($hook != 'field') {
+    return;
+  }
+  if (!\Drupal::currentUser()->hasPermission('view pairment feedback')) {
+    return;
+  }
+  $field_key = $variables['element']['#entity_type'] .'--'.
+    $variables['element']['#bundle'] .'--'.
+    $variables['element']['#field_name'];
+  $pairment_fields = \Drupal::config('pairment.settings')->get('fields');
+  if(!isset($pairment_fields[$field_key]) || !$pairment_fields[$field_key]) {
+    return;
+  }
+  foreach($variables['items'] as $key => $item) {
+    $variables['items'][$key]['content']['#prefix'] = '<span class="_pairment-content">';
+    $variables['items'][$key]['content']['#suffix'] = '</span>';
+  }
+};
